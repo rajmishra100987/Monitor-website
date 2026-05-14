@@ -3,6 +3,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import TimeoutException, WebDriverException
 from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 import threading
 import time
 import json
@@ -74,18 +75,6 @@ def get_chromium_path():
             return path
     return None
 
-def find_chromedriver_path():
-    """Find ChromeDriver path"""
-    driver_paths = [
-        '/usr/bin/chromedriver',
-        '/usr/local/bin/chromedriver',
-        '/usr/bin/chromium-driver'
-    ]
-    for path in driver_paths:
-        if os.path.exists(path):
-            return path
-    return None
-
 def setup_shared_browser():
     """Setup single shared browser instance"""
     global shared_driver, shared_driver_last_restart
@@ -115,16 +104,9 @@ def setup_shared_browser():
         if chromium_path:
             options.binary_location = chromium_path
         
-        # Find ChromeDriver
-        chromedriver_path = find_chromedriver_path()
-        
-        if chromedriver_path:
-            service = Service(executable_path=chromedriver_path)
-            shared_driver = webdriver.Chrome(service=service, options=options)
-            logger.info(f"Shared browser started with driver at: {chromedriver_path}")
-        else:
-            shared_driver = webdriver.Chrome(options=options)
-            logger.info("Shared browser started with default driver")
+        # Use webdriver-manager for automatic ChromeDriver
+        service = Service(ChromeDriverManager().install())
+        shared_driver = webdriver.Chrome(service=service, options=options)
         
         shared_driver_last_restart = time.time()
         logger.info("Shared browser setup completed successfully")
@@ -622,7 +604,7 @@ if __name__ == '__main__':
     # Start memory cleanup thread
     start_memory_cleanup_thread()
     
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 8080))
     
     logger.info("=" * 50)
     logger.info(f"🚀 Monitor Dashboard Started")
